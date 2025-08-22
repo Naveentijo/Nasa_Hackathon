@@ -3,17 +3,19 @@ pygame.font.init()
 from settings import *
 from entities import *
 from tasks import asteroid_mini_game
+from navigation import handle_navigation
 pygame.init()
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Galactic Crew - Multi-Planet Gravity + Shuttle + Task")
 
-
-
-
 # ================= GAME STATE ==================
 game_mode = "outside"
 clock = pygame.time.Clock()
+path_history = []  # Track spacecraft path
+closest_body = None  # Track closest planet
+show_path = False  # Toggle path display
+frame_counter = 0  # For sampling path history
 
 def compute_net_gravity_at_point(x, y):
     net_x, net_y = 0.0, 0.0
@@ -71,7 +73,7 @@ while True:
         # Check if near a celestial body
         in_gravity_zone = (abs(g_x) > 0.0001 or abs(g_y) > 0.0001)
 
-        # Movement input (always available)
+        # Movement input
         thrust_dx, thrust_dy = 0.0, 0.0
         if keys[pygame.K_UP]:
             thrust_dy -= manual_thrust
@@ -82,7 +84,7 @@ while True:
         if keys[pygame.K_RIGHT]:
             thrust_dx += manual_thrust
 
-        # Boost (auto near gravity or manual space)
+        # Boost
         if in_gravity_zone or keys[pygame.K_SPACE]:
             if keys[pygame.K_UP]:
                 thrust_dy -= boost_thrust
@@ -105,6 +107,13 @@ while True:
         astronaut_y += astronaut_dy
         astronaut_dx *= OUTSIDE_FRICTION
         astronaut_dy *= OUTSIDE_FRICTION
+
+        # Record path history every 5 frames
+        frame_counter += 1
+        if frame_counter % 5 == 0:
+            path_history.append((astronaut_x, astronaut_y))
+            if len(path_history) > 1000:
+                path_history.pop(0)
 
         camera_x = astronaut_x - WIDTH // 2
         camera_y = astronaut_y - HEIGHT // 2
@@ -182,11 +191,22 @@ while True:
                 asteroid_mini_game()
                 game_mode = "inside"
 
+        if astronaut_inside.colliderect(navigation_terminal):
+            msg = font.render("Press E to open Navigation System", True, WHITE)
+            screen.blit(msg, (800, 760))
+            if keys[pygame.K_e]:
+                game_mode = "navigation"
+                closest_body = None
+                show_path = False
+
         msg = font.render("Press Q to go back outside", True, WHITE)
         screen.blit(msg, (500, 770))
         if keys[pygame.K_q]:
             game_mode = "outside"
             astronaut_dx = astronaut_dy = 0.0
+
+    elif game_mode == "navigation":
+        closest_body, show_path, game_mode = handle_navigation(screen, astronaut_x, astronaut_y, path_history, closest_body, show_path, keys)
 
     pygame.display.flip()
     clock.tick(60)

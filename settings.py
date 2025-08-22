@@ -8,7 +8,6 @@ WIDTH, HEIGHT = 1200, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Galactic Crew - Multi-Planet Gravity + Shuttle + Task")
 
-
 # Colors
 BLACK = (0,0,0)
 WHITE = (255,255,255)
@@ -21,7 +20,6 @@ ORANGE = (255,165,0)
 PURPLE = (180,0,255)
 
 font = pygame.font.SysFont("Arial", 20)
-
 
 # ================= OUTSIDE MODE (Space Travel) ==================
 astronaut_x, astronaut_y = 1000.0, 1000.0
@@ -61,14 +59,17 @@ walls = [
     pygame.Rect(WIDTH-10, 0, 10, HEIGHT),
     pygame.Rect(300, 0, 10, 300),
     pygame.Rect(0, 300, WIDTH, 10),
+    pygame.Rect(900, 0, 10, 300),  # New wall for Navigation Room
 ]
 
 doors = [
     pygame.Rect(280, 140, 40, 40),
     pygame.Rect(430, 290, 40, 40),
+    pygame.Rect(880, 140, 40, 40),  # New door to Navigation Room
 ]
 
 task_terminal = pygame.Rect(600, 150, 40, 40)
+navigation_terminal = pygame.Rect(1000, 150, 40, 40)  # New navigation terminal
 
 def draw_shuttle():
     for wall in walls:
@@ -76,12 +77,15 @@ def draw_shuttle():
     for door in doors:
         pygame.draw.rect(screen, GREEN, door)
     pygame.draw.rect(screen, RED, task_terminal)
+    pygame.draw.rect(screen, PURPLE, navigation_terminal)  # Draw navigation terminal
     cockpit = font.render("Cockpit", True, WHITE)
     control = font.render("Control Room", True, WHITE)
     engine = font.render("Engine Room", True, WHITE)
+    navigation = font.render("Navigation Room", True, WHITE)
     screen.blit(cockpit, (100, 50))
     screen.blit(control, (500, 50))
     screen.blit(engine, (400, 400))
+    screen.blit(navigation, (950, 50))  # Label for Navigation Room
 
 def check_collision(rect, move_x, move_y):
     future_rect = rect.move(move_x, move_y)
