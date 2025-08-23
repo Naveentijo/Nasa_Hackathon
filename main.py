@@ -1,17 +1,14 @@
 import pygame
-pygame.font.init()
+import sys
+import math
 from settings import *
 from entities import *
 from tasks import asteroid_mini_game
-pygame.init()
+from oxygen_tasks import task_selection_screen
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Galactic Crew - Multi-Planet Gravity + Shuttle + Task")
 
-
-
-
-# ================= GAME STATE ==================
+# Game state
 game_mode = "outside"
 clock = pygame.time.Clock()
 
@@ -33,7 +30,7 @@ def compute_net_gravity_at_point(x, y):
     return net_x, net_y
 
 def draw_radar(player_x, player_y, radar_center=(WIDTH-120, 120), radar_radius=100, radar_range=2500):
-    pygame.draw.circle(screen, (30,30,30), radar_center, radar_radius)
+    pygame.draw.circle(screen, (30, 30, 30), radar_center, radar_radius)
     pygame.draw.circle(screen, WHITE, radar_center, radar_radius, 2)
 
     for body in celestial_bodies:
@@ -41,7 +38,7 @@ def draw_radar(player_x, player_y, radar_center=(WIDTH-120, 120), radar_radius=1
             cx, cy = body["orbit_center"]
             screen_x = cx - camera_x
             screen_y = cy - camera_y
-            pygame.draw.circle(screen, (80,80,80), (int(screen_x), int(screen_y)), body["orbit_radius"], 1)
+            pygame.draw.circle(screen, (80, 80, 80), (int(screen_x), int(screen_y)), body["orbit_radius"], 1)
 
     for body in celestial_bodies:
         bx, by = body["pos"]
@@ -54,7 +51,7 @@ def draw_radar(player_x, player_y, radar_center=(WIDTH-120, 120), radar_radius=1
 
     pygame.draw.circle(screen, YELLOW, radar_center, 5)
 
-# ================= MAIN LOOP ==================
+# Main loop
 while True:
     screen.fill(BLACK)
     for event in pygame.event.get():
@@ -67,11 +64,9 @@ while True:
     if game_mode == "outside":
         # Gravity
         g_x, g_y = compute_net_gravity_at_point(astronaut_x, astronaut_y)
-
-        # Check if near a celestial body
         in_gravity_zone = (abs(g_x) > 0.0001 or abs(g_y) > 0.0001)
 
-        # Movement input (always available)
+        # Movement input
         thrust_dx, thrust_dy = 0.0, 0.0
         if keys[pygame.K_UP]:
             thrust_dy -= manual_thrust
@@ -82,7 +77,7 @@ while True:
         if keys[pygame.K_RIGHT]:
             thrust_dx += manual_thrust
 
-        # Boost (auto near gravity or manual space)
+        # Boost
         if in_gravity_zone or keys[pygame.K_SPACE]:
             if keys[pygame.K_UP]:
                 thrust_dy -= boost_thrust
@@ -95,12 +90,8 @@ while True:
 
         astronaut_dx += thrust_dx
         astronaut_dy += thrust_dy
-
-        # Apply gravity
         astronaut_dx += g_x
         astronaut_dy += g_y
-
-        # Update position
         astronaut_x += astronaut_dx
         astronaut_y += astronaut_dy
         astronaut_dx *= OUTSIDE_FRICTION
@@ -165,7 +156,7 @@ while True:
 
         if check_collision(astronaut_inside, int(move_x), 0):
             astronaut_inside_x += move_x
-        if check_collision(astronaut_inside, 0, int(move_y)):
+        if check_collision(astronaut_inside, 0, int(move_y)):  # Fixed: Use astronaut_inside
             astronaut_inside_y += move_y
 
         astronaut_inside.x = int(round(astronaut_inside_x + gravity_move_x))
@@ -174,6 +165,16 @@ while True:
         draw_shuttle()
         pygame.draw.rect(screen, BLUE, astronaut_inside)
 
+        # Oxygen System Terminal
+        if astronaut_inside.colliderect(oxygen_terminal):
+            msg = font.render("Press E to access Oxygen System Tasks", True, WHITE)
+            screen.blit(msg, (700, 700))
+            if keys[pygame.K_e]:
+                game_mode = "oxygen_task"
+                task_selection_screen()
+                game_mode = "inside"
+
+        # Asteroid Defense Terminal
         if astronaut_inside.colliderect(task_terminal):
             msg = font.render("Press E to start Asteroid Defense Task", True, WHITE)
             screen.blit(msg, (400, 760))
